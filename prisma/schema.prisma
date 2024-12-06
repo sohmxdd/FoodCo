@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  name          String?
+  email         String?      @unique
+  hashPassword  String?
+  phoneNumber   String?
+  emailVerified DateTime?
+  image         String?
+  address       String?
+  orders        Orders[]
+  cart          Cart[]
+  favorite      Favorites[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  accounts      Account[]
+  restaurants   Restaurant[]
+}
+
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.String
+  access_token      String? @db.String
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.String
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Orders {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @db.ObjectId
+  stripeSessionId String?
+  total           Float?
+  email           String?
+  phone           String?
+  address         String?
+  menuId          String
+  status          String?
+  paymentStatus   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Item            Item[]
+}
+
+model Cart {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Item      Item[]
+}
+
+model Item {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  productId   String
+  quantity    Int
+  type        String
+  price       Float
+  name        String
+  rating      String?
+  description String?
+  image       String?
+  ordersId    String?    @db.ObjectId
+  cartId      String?    @db.ObjectId
+  favoritesId String?    @db.ObjectId
+  Orders      Orders?    @relation(fields: [ordersId], references: [id])
+  Cart        Cart?      @relation(fields: [cartId], references: [id])
+  Favorites   Favorites? @relation(fields: [favoritesId], references: [id])
+}
+
+model Favorites {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String     @db.ObjectId
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Item      Item[]
+  FoodItem  FoodItem[]
+}
+
+model Restaurant {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  name         String?
+  email        String?  @unique
+  phone        String?
+  location     String?
+  identityName String?
+  image        String?
+  rating       String?
+  speciality   String?
+  identityUrl  String?
+  menu         Menu[]
+  ownerId      String   @db.ObjectId
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  owner        User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+}
+
+model Menu {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  restaurantId String     @db.ObjectId
+  category     Category[]
+  items        FoodItem[]
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+}
+
+model Category {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  foodItems FoodItem[]
+  Menu      Menu?      @relation(fields: [menuId], references: [id])
+  menuId    String?    @db.ObjectId
+}
+
+model FoodItem {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  menuId      String     @db.ObjectId
+  categoryId  String     @db.ObjectId
+  name        String
+  description String?
+  price       String
+  rating      String?
+  type        String
+  image       String
+  quantity    Int        @default(1)
+  menu        Menu       @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  category    Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  ordersId    String?    @db.ObjectId
+  cartId      String?    @db.ObjectId
+  favoritesId String?    @db.ObjectId
+  Favorites   Favorites? @relation(fields: [favoritesId], references: [id])
+}
